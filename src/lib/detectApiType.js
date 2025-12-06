@@ -42,5 +42,22 @@ export function detectApiType(data) {
     }
   }
 
+  // If we have any array in the data structure, consider it supported
+  // This allows any API with arrays to be used
+  const hasArray = (obj) => {
+    if (Array.isArray(obj)) return true;
+    if (obj && typeof obj === 'object') {
+      for (const key in obj) {
+        if (Array.isArray(obj[key])) return true;
+        if (obj[key] && typeof obj[key] === 'object' && hasArray(obj[key])) return true;
+      }
+    }
+    return false;
+  };
+
+  if (hasArray(data)) {
+    return 'generic-array';
+  }
+
   return 'unsupported';
 }

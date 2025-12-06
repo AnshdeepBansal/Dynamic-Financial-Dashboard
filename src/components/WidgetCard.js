@@ -12,6 +12,7 @@ import AddWidgetModal from './AddWidgetModal';
 export default function WidgetCard({ widget, onEdit }) {
   const { deleteWidget } = useWidgetStore();
   const [data, setData] = useState(null);
+  const [rawData, setRawData] = useState(null); // Store raw API response for table rendering
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [lastUpdated, setLastUpdated] = useState(null);
@@ -43,14 +44,33 @@ export default function WidgetCard({ widget, onEdit }) {
     setError(null);
 
     try {
-      const response = await fetch(widget.apiUrl);
+      // Build headers object from widget headers
+      const headersObj = {};
+      if (widget.headers && Array.isArray(widget.headers)) {
+        widget.headers.forEach((header) => {
+          if (header.key && header.key.trim()) {
+            headersObj[header.key.trim()] = header.value || '';
+          }
+        });
+      }
+
+      // Use proxy endpoint to bypass CORS
+      const proxyUrl = `/api/proxy?url=${encodeURIComponent(widget.apiUrl)}`;
+      const headersParam = Object.keys(headersObj).length > 0 
+        ? `&headers=${encodeURIComponent(JSON.stringify(headersObj))}`
+        : '';
+
+      const response = await fetch(proxyUrl + headersParam);
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
       }
       const jsonData = await response.json();
       const apiType = detectApiType(jsonData);
       const parsedData = parseApi(jsonData, apiType, widget.selectedFields);
       setData(parsedData);
+      // Store raw data for table renderer to access nested paths
+      setRawData(jsonData);
       setLastUpdated(new Date());
     } catch (err) {
       setError(err.message);
@@ -67,7 +87,7 @@ export default function WidgetCard({ widget, onEdit }) {
     }, widget.refreshInterval * 1000);
 
     return () => clearInterval(interval);
-  }, [widget.apiUrl, widget.refreshInterval]);
+  }, [widget.apiUrl, widget.refreshInterval, widget.headers]);
 
   const handleDelete = (e) => {
     e.stopPropagation();
@@ -100,18 +120,23 @@ export default function WidgetCard({ widget, onEdit }) {
 
     switch (widget.displayMode) {
       case 'card':
+        // For cards, use raw data to preserve original structure for field mapping
+        let cardData = rawData || data;
+        // If raw data is an array, pass it as-is and let CardRenderer handle it
+        // CardRenderer will extract the first item if needed
         return (
           <CardRenderer
-            data={data}
+            data={cardData}
             selectedFields={widget.selectedFields}
             widgetName={widget.widgetName}
             apiType={widget.widgetType}
           />
         );
       case 'table':
+        // For tables, use raw data to preserve nested structure for path extraction
         return (
           <TableRenderer
-            data={data}
+            data={rawData || data}
             selectedFields={widget.selectedFields}
             apiType={widget.widgetType}
           />

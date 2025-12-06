@@ -6,19 +6,19 @@ import AddWidgetModal from './AddWidgetModal';
 
 export default function Header() {
   const { exportConfig, setTheme, theme, widgets } = useWidgetStore();
-  const [isDark, setIsDark] = useState(theme === 'dark');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const fileInputRef = useRef(null);
 
-  useEffect(() => {
-    setIsDark(theme === 'dark');
-  }, [theme]);
-
   const handleThemeToggle = () => {
-    const newTheme = isDark ? 'light' : 'dark';
-    setIsDark(!isDark);
+    const newTheme = theme === 'dark' ? 'light' : 'dark';
     setTheme(newTheme);
-    document.documentElement.classList.toggle('dark', !isDark);
+    // Apply theme immediately to DOM
+    const root = document.documentElement;
+    if (newTheme === 'dark') {
+      root.classList.add('dark');
+    } else {
+      root.classList.remove('dark');
+    }
   };
 
   const handleExport = () => {
@@ -53,9 +53,10 @@ export default function Header() {
   };
 
   const activeWidgetsCount = widgets.length;
+  const isDark = theme === 'dark';
 
   return (
-    <header className="w-full border-b border-gray-700 bg-gray-900 px-6 py-4">
+    <header className={`w-full border-b px-6 py-4 ${isDark ? 'border-gray-700 bg-gray-900' : 'border-gray-200 bg-white'}`}>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
@@ -72,9 +73,9 @@ export default function Header() {
                 d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
               />
             </svg>
-            <h1 className="text-xl font-bold text-white">Finance Dashboard</h1>
+            <h1 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>Finance Dashboard</h1>
           </div>
-          <div className="text-sm text-gray-400">
+          <div className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
             {activeWidgetsCount} active widget{activeWidgetsCount !== 1 ? 's' : ''} - Real-time data
           </div>
         </div>
@@ -83,10 +84,10 @@ export default function Header() {
           {/* Theme Toggle */}
           <button
             onClick={handleThemeToggle}
-            className="rounded-lg bg-gray-800 px-4 py-2 text-sm text-white hover:bg-gray-700"
+            className={`rounded-lg px-4 py-2 text-sm ${isDark ? 'bg-gray-800 text-white hover:bg-gray-700' : 'bg-gray-200 text-gray-900 hover:bg-gray-300'}`}
             aria-label="Toggle theme"
           >
-            {isDark ? '☀️' : '🌙'}
+            {theme === 'dark' ? '☀️' : '🌙'}
           </button>
 
           {/* Import JSON */}
@@ -99,7 +100,7 @@ export default function Header() {
           />
           <button
             onClick={() => fileInputRef.current?.click()}
-            className="rounded-lg bg-gray-800 px-4 py-2 text-sm text-white hover:bg-gray-700"
+            className={`rounded-lg px-4 py-2 text-sm ${isDark ? 'bg-gray-800 text-white hover:bg-gray-700' : 'bg-gray-200 text-gray-900 hover:bg-gray-300'}`}
           >
             Import JSON
           </button>
@@ -107,7 +108,7 @@ export default function Header() {
           {/* Export JSON */}
           <button
             onClick={handleExport}
-            className="rounded-lg bg-gray-800 px-4 py-2 text-sm text-white hover:bg-gray-700"
+            className={`rounded-lg px-4 py-2 text-sm ${isDark ? 'bg-gray-800 text-white hover:bg-gray-700' : 'bg-gray-200 text-gray-900 hover:bg-gray-300'}`}
           >
             Export JSON
           </button>

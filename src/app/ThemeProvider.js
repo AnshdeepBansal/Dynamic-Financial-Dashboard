@@ -8,10 +8,12 @@ export default function ThemeProvider({ children }) {
 
   useEffect(() => {
     // Apply theme on mount and when it changes
-    if (theme === 'dark') {
-      document.documentElement.classList.add('dark');
+    const root = document.documentElement;
+    const currentTheme = theme || 'dark';
+    if (currentTheme === 'dark') {
+      root.classList.add('dark');
     } else {
-      document.documentElement.classList.remove('dark');
+      root.classList.remove('dark');
     }
   }, [theme]);
 

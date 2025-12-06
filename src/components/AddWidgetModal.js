@@ -25,6 +25,11 @@ export default function AddWidgetModal({ isOpen, onClose, editingWidget = null }
   const [apiType, setApiType] = useState(null);
   const [testStatus, setTestStatus] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [headers, setHeaders] = useState(
+    editingWidget?.headers && editingWidget.headers.length > 0
+      ? editingWidget.headers
+      : []
+  );
 
   // Check widget limit (max 3 APIs)
   const uniqueApiUrls = new Set(
@@ -39,10 +44,22 @@ export default function AddWidgetModal({ isOpen, onClose, editingWidget = null }
       setRefreshInterval(editingWidget.refreshInterval);
       setDisplayMode(editingWidget.displayMode);
       setSelectedFields(editingWidget.selectedFields || []);
+      setHeaders(
+        editingWidget.headers && editingWidget.headers.length > 0
+          ? editingWidget.headers
+          : []
+      );
       // Test the API again when editing
       handleTestApi();
     }
   }, [editingWidget, isOpen]);
+
+  // Auto-filter to arrays when switching to table mode
+  useEffect(() => {
+    if (displayMode === 'table') {
+      setShowArraysOnly(true);
+    }
+  }, [displayMode]);
 
   const handleTestApi = async () => {
     if (!apiUrl.trim()) {
@@ -54,28 +71,49 @@ export default function AddWidgetModal({ isOpen, onClose, editingWidget = null }
     setTestStatus(null);
 
     try {
-      const response = await fetch(apiUrl);
+      // Build headers object from key-value pairs
+      const headersObj = {};
+      headers.forEach((header) => {
+        if (header.key.trim()) {
+          headersObj[header.key.trim()] = header.value.trim();
+        }
+      });
+
+      // Use proxy endpoint to bypass CORS
+      const proxyUrl = `/api/proxy?url=${encodeURIComponent(apiUrl)}`;
+      const headersParam = Object.keys(headersObj).length > 0 
+        ? `&headers=${encodeURIComponent(JSON.stringify(headersObj))}`
+        : '';
+
+      const response = await fetch(proxyUrl + headersParam);
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
       }
       const data = await response.json();
       const detectedType = detectApiType(data);
+      const paths = extractJsonPaths(data);
+      const hasArrays = paths.some(p => p.type === 'array');
 
-      if (detectedType === 'unsupported') {
+      // Accept any API that has at least one array (for tables) or any fields (for cards)
+      if (paths.length === 0) {
         setTestStatus({
           success: false,
-          message: 'Unsupported API format. Please use Time Series (Daily/Weekly/Monthly) or Crypto Rates API.',
+          message: 'API response is empty or has no extractable fields.',
         });
         setApiData(null);
         setAvailableFields([]);
       } else {
         setApiData(data);
         setApiType(detectedType);
-        const paths = extractJsonPaths(data);
         setAvailableFields(paths);
+        const arrayCount = paths.filter(p => p.type === 'array').length;
+        const message = hasArrays 
+          ? `API connection successful! ${paths.length} fields found (${arrayCount} array${arrayCount !== 1 ? 's' : ''} available for tables).`
+          : `API connection successful! ${paths.length} fields found. Note: No arrays found - tables require array data.`;
         setTestStatus({
           success: true,
-          message: `API connection successful! ${paths.length} top-level fields found.`,
+          message,
         });
       }
     } catch (error) {
@@ -91,8 +129,19 @@ export default function AddWidgetModal({ isOpen, onClose, editingWidget = null }
   };
 
   const handleAddField = (fieldPath) => {
-    if (!selectedFields.includes(fieldPath)) {
-      setSelectedFields([...selectedFields, fieldPath]);
+    // For table mode, only allow one array to be selected
+    if (displayMode === 'table') {
+      // Check if this field is an array
+      const field = availableFields.find(f => f.path === fieldPath);
+      if (field && field.type === 'array') {
+        // Replace any existing selection with this new one
+        setSelectedFields([fieldPath]);
+      }
+    } else {
+      // For other modes, allow multiple selections
+      if (!selectedFields.includes(fieldPath)) {
+        setSelectedFields([...selectedFields, fieldPath]);
+      }
     }
   };
 
@@ -102,7 +151,10 @@ export default function AddWidgetModal({ isOpen, onClose, editingWidget = null }
 
   const filteredFields = availableFields.filter((field) => {
     const matchesSearch = field.path.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesArrayFilter = showArraysOnly ? field.type === 'array' : true;
+    // For table mode, only show arrays by default
+    const matchesArrayFilter = displayMode === 'table' 
+      ? (showArraysOnly ? field.type === 'array' : field.type === 'array')
+      : (showArraysOnly ? field.type === 'array' : true);
     return matchesSearch && matchesArrayFilter;
   });
 
@@ -128,11 +180,27 @@ export default function AddWidgetModal({ isOpen, onClose, editingWidget = null }
     if (displayMode === 'chart' && apiType === 'time-series') {
       // For charts, automatically use all time-series fields
       fieldsToUse = ['open', 'high', 'low', 'close', 'volume'];
-    } else if (displayMode === 'table' && apiType === 'generic-array') {
-      // For tables with generic arrays, use all available fields (data will be auto-detected)
-      fieldsToUse = availableFields.filter(field => field.type === 'array').map(field => field.path);
+    } else if (displayMode === 'table') {
+      // For tables, ensure we have at least one array selected
+      if (fieldsToUse.length === 0) {
+        // Try to auto-select first available array
+        const arrays = availableFields.filter(field => field.type === 'array');
+        if (arrays.length > 0) {
+          fieldsToUse = [arrays[0].path];
+        } else {
+          alert('Please select an array field to display as a table. No arrays found in the API response.');
+          return;
+        }
+      } else {
+        // Validate that selected field is an array
+        const selectedField = availableFields.find(f => f.path === fieldsToUse[0]);
+        if (!selectedField || selectedField.type !== 'array') {
+          alert('For table view, please select an array field. The selected field is not an array.');
+          return;
+        }
+      }
     } else if (fieldsToUse.length === 0) {
-      // For other modes, use all available fields if none selected
+      // For other modes (cards), use all available fields if none selected
       fieldsToUse = availableFields.map(field => field.path);
     }
 
@@ -151,10 +219,13 @@ export default function AddWidgetModal({ isOpen, onClose, editingWidget = null }
       return;
     }
 
-    if (!canAddMore && !editingWidget) {
-      alert('Maximum of 3 unique APIs allowed');
-      return;
-    }
+    // if (!canAddMore && !editingWidget) {
+    //   alert('Maximum of 3 unique APIs allowed');
+    //   return;
+    // }
+
+    // Filter out empty headers
+    const validHeaders = headers.filter((h) => h.key.trim() !== '');
 
     const widgetData = {
       widgetName: widgetName.trim(),
@@ -163,6 +234,7 @@ export default function AddWidgetModal({ isOpen, onClose, editingWidget = null }
       displayMode,
       selectedFields: fieldsToUse,
       widgetType: apiType,
+      headers: validHeaders.length > 0 ? validHeaders : undefined,
     };
 
     if (editingWidget) {
@@ -186,6 +258,7 @@ export default function AddWidgetModal({ isOpen, onClose, editingWidget = null }
     setApiData(null);
     setApiType(null);
     setTestStatus(null);
+    setHeaders([]);
     onClose();
   };
 
@@ -301,6 +374,77 @@ export default function AddWidgetModal({ isOpen, onClose, editingWidget = null }
           )}
         </div>
 
+        {/* Headers Section */}
+        <div className="mb-4">
+          <div className="mb-2 flex items-center justify-between">
+            <label className="block text-sm font-medium">
+              Request Headers (Optional)
+            </label>
+            <button
+              type="button"
+              onClick={() => setHeaders([...headers, { key: '', value: '' }])}
+              className="text-sm text-green-400 hover:text-green-300"
+            >
+              + Add Header
+            </button>
+          </div>
+          {headers.length === 0 ? (
+            <div className="rounded-lg border border-dashed border-gray-600 p-4 text-center">
+              <p className="text-sm text-gray-400 mb-2">No headers added</p>
+              <button
+                type="button"
+                onClick={() => setHeaders([{ key: '', value: '' }])}
+                className="text-sm text-green-400 hover:text-green-300"
+              >
+                Click to add a header
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {headers.map((header, index) => (
+              <div key={index} className="flex gap-2">
+                <input
+                  type="text"
+                  value={header.key}
+                  onChange={(e) => {
+                    const newHeaders = [...headers];
+                    newHeaders[index].key = e.target.value;
+                    setHeaders(newHeaders);
+                  }}
+                  placeholder="Header Key (e.g., Authorization)"
+                  className="flex-1 rounded-lg bg-gray-700 px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+                />
+                <input
+                  type="text"
+                  value={header.value}
+                  onChange={(e) => {
+                    const newHeaders = [...headers];
+                    newHeaders[index].value = e.target.value;
+                    setHeaders(newHeaders);
+                  }}
+                  placeholder="Header Value (e.g., Bearer token123)"
+                  className="flex-1 rounded-lg bg-gray-700 px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    const newHeaders = headers.filter((_, i) => i !== index);
+                    setHeaders(newHeaders);
+                  }}
+                  className="rounded-lg bg-red-600 px-3 py-2 text-white hover:bg-red-700"
+                  title="Remove header"
+                >
+                  ×
+                </button>
+              </div>
+              ))}
+            </div>
+          )}
+          <p className="mt-2 text-xs text-gray-400">
+            Add custom headers for API authentication or other requirements (e.g., Authorization, X-API-Key)
+          </p>
+        </div>
+
         {/* Refresh Interval */}
         <div className="mb-4">
           <label className="mb-2 block text-sm font-medium">
@@ -352,20 +496,24 @@ export default function AddWidgetModal({ isOpen, onClose, editingWidget = null }
           </div>
         </div>
 
-        {/* Field Selection - Only show for non-chart and non-table-generic modes */}
-        {testStatus?.success && displayMode !== 'chart' && !(displayMode === 'table' && apiType === 'generic-array') && (
+        {/* Field Selection */}
+        {testStatus?.success && displayMode !== 'chart' && (
           <div className="mb-4">
             <div className="mb-2 flex items-center justify-between">
-              <label className="block text-sm font-medium">Search Fields</label>
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={showArraysOnly}
-                  onChange={(e) => setShowArraysOnly(e.target.checked)}
-                  className="rounded"
-                />
-                <span>Show arrays only (for table view)</span>
+              <label className="block text-sm font-medium">
+                {displayMode === 'table' ? 'Select Array Field for Table' : 'Select Fields to Display'}
               </label>
+              {displayMode === 'table' && (
+                <label className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={showArraysOnly}
+                    onChange={(e) => setShowArraysOnly(e.target.checked)}
+                    className="rounded"
+                  />
+                  <span>Show arrays only</span>
+                </label>
+              )}
             </div>
             <input
               type="text"
@@ -402,10 +550,10 @@ export default function AddWidgetModal({ isOpen, onClose, editingWidget = null }
                         </div>
                         <button
                           onClick={() => handleAddField(field.path)}
-                          disabled={selectedFields.includes(field.path)}
+                          disabled={displayMode === 'table' ? selectedFields.length > 0 && selectedFields[0] === field.path : selectedFields.includes(field.path)}
                           className="ml-2 rounded bg-green-600 px-2 py-1 text-white hover:bg-green-700 disabled:opacity-50"
                         >
-                          +
+                          {displayMode === 'table' && selectedFields.length > 0 && selectedFields[0] === field.path ? '✓' : '+'}
                         </button>
                       </div>
                     ))
@@ -459,14 +607,32 @@ export default function AddWidgetModal({ isOpen, onClose, editingWidget = null }
           </div>
         )}
 
-        {/* Auto-mapping info for table mode with generic arrays */}
-        {testStatus?.success && displayMode === 'table' && apiType === 'generic-array' && (
+        {/* Info for table mode */}
+        {testStatus?.success && displayMode === 'table' && (
           <div className="mb-4 rounded-lg bg-blue-900 p-3 text-blue-200 text-sm">
             <div className="flex items-center gap-2">
               <svg className="h-5 w-5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" clipRule="evenodd" />
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
               </svg>
-              <span>Table will automatically display all array data with dynamic columns</span>
+              <span>
+                {selectedFields.length > 0 
+                  ? `Table will display data from the selected array. Columns will be generated automatically from the array items.`
+                  : `Please select an array field from the API response. The table will automatically generate columns from the array items.`}
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* Info for card mode */}
+        {testStatus?.success && displayMode === 'card' && (
+          <div className="mb-4 rounded-lg bg-blue-900 p-3 text-blue-200 text-sm">
+            <div className="flex items-center gap-2">
+              <svg className="h-5 w-5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+              </svg>
+              <span>
+                Cards support any API structure. Select fields to display and they will be mapped one-to-one from the API response.
+              </span>
             </div>
           </div>
         )}

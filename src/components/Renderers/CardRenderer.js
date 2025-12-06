@@ -11,78 +11,95 @@ export default function CardRenderer({ data, selectedFields, widgetName, apiType
     );
   }
 
-  if (apiType === 'crypto-rates') {
-    const currency = data.currency || '';
-    const rates = data.rates || [];
-    const ratesMap = new Map(rates.map((r) => [r.symbol, r.value]));
-
+  // If no fields selected, show message
+  if (!selectedFields || selectedFields.length === 0) {
     return (
-      <div className="p-4">
-        <div className="mb-4 text-sm text-gray-400">Base: {currency}</div>
-        <div className="space-y-2">
-          {selectedFields.length > 0
-            ? selectedFields.map((fieldPath, index) => {
-                // For crypto rates, fieldPath might be like "data.rates.BTC"
-                // We need to extract the symbol (last part after 'rates.')
-                const parts = fieldPath.split('.');
-                const ratesIndex = parts.indexOf('rates');
-                const symbol = ratesIndex >= 0 && ratesIndex < parts.length - 1
-                  ? parts[ratesIndex + 1]
-                  : parts[parts.length - 1];
-                
-                const value = ratesMap.get(symbol);
-
-                if (value !== undefined) {
-                  return (
-                    <div
-                      key={index}
-                      className="flex justify-between rounded-lg bg-gray-700 p-3"
-                    >
-                      <span className="text-gray-300">{symbol}</span>
-                      <span className="font-semibold text-white">{value}</span>
-                    </div>
-                  );
-                }
-                return null;
-              })
-            : rates.slice(0, 10).map((rate, index) => (
-                <div
-                  key={index}
-                  className="flex justify-between rounded-lg bg-gray-700 p-3"
-                >
-                  <span className="text-gray-300">{rate.symbol}</span>
-                  <span className="font-semibold text-white">{rate.value}</span>
-                </div>
-              ))}
-        </div>
+      <div className="p-4 text-center text-gray-400">
+        <div className="mb-2">No fields selected</div>
+        <div className="text-sm">Please select fields to display in the widget configuration.</div>
       </div>
     );
   }
 
-  // Generic card renderer for other data types
+  // Get field labels (last part of path) for display
+  const getFieldLabel = (path) => {
+    const parts = path.split('.');
+    return parts[parts.length - 1];
+  };
+
+  // Format value for display
+  const formatValue = (value) => {
+    if (value == null) return 'N/A';
+    if (typeof value === 'object') {
+      if (Array.isArray(value)) {
+        return `[${value.length} items]`;
+      }
+      return JSON.stringify(value);
+    }
+    if (typeof value === 'number') {
+      // Format large numbers with commas
+      if (value > 1000) {
+        return value.toLocaleString();
+      }
+      // Format decimals
+      if (value % 1 !== 0) {
+        return value.toFixed(4);
+      }
+      return value.toString();
+    }
+    return String(value);
+  };
+
+  // Handle array data - if data is an array, use first item for card display
+  let displayData = data;
+  if (Array.isArray(data) && data.length > 0) {
+    // For array responses, use the first item for card display
+    displayData = data[0];
+  } else if (data && typeof data === 'object' && data.data && Array.isArray(data.data) && data.data.length > 0) {
+    // Handle parsed data structure that wraps array in data property
+    displayData = data.data[0];
+  }
+
   return (
     <div className="p-4">
       <div className="space-y-2">
-        {selectedFields.length > 0
-          ? selectedFields.map((fieldPath, index) => {
-              const value = getValueByPath(data, fieldPath);
-              return (
-                <div
-                  key={index}
-                  className="flex justify-between rounded-lg bg-gray-700 p-3"
-                >
-                  <span className="text-gray-300">{fieldPath}</span>
-                  <span className="font-semibold text-white">
-                    {value !== undefined ? String(value) : 'N/A'}
-                  </span>
-                </div>
-              );
-            })
-          : (
-            <div className="text-center text-gray-400">
-              No fields selected
+        {selectedFields.map((fieldPath, index) => {
+          // Handle different path formats
+          let value = undefined;
+          
+          // If path starts with [0], remove it and try direct access (for array item fields)
+          if (fieldPath.startsWith('[0].')) {
+            const pathWithoutIndex = fieldPath.substring(4); // Remove "[0]."
+            value = getValueByPath(displayData, pathWithoutIndex);
+          } else {
+            // Try the path as-is
+            value = getValueByPath(displayData, fieldPath);
+          }
+          
+          // If still undefined and fieldPath is a simple key (no dots, no brackets), try direct access
+          if (value === undefined && !fieldPath.includes('.') && !fieldPath.includes('[')) {
+            value = displayData && typeof displayData === 'object' && displayData !== null 
+              ? displayData[fieldPath] 
+              : undefined;
+          }
+
+          const label = getFieldLabel(fieldPath);
+          const displayValue = formatValue(value);
+
+          return (
+            <div
+              key={index}
+              className="flex justify-between rounded-lg bg-gray-700 p-3 hover:bg-gray-600 transition-colors"
+            >
+              <span className="text-gray-300 truncate pr-2" title={fieldPath}>
+                {label}
+              </span>
+              <span className="font-semibold text-white whitespace-nowrap">
+                {displayValue}
+              </span>
             </div>
-          )}
+          );
+        })}
       </div>
     </div>
   );
