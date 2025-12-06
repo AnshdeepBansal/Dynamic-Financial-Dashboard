@@ -88,16 +88,26 @@ export default function CardRenderer({ data, selectedFields, widgetName, apiType
 
           return (
             <div
-              key={index}
-              className="flex justify-between rounded-lg bg-gray-700 p-3 hover:bg-gray-600 transition-colors"
-            >
-              <span className="text-gray-300 truncate pr-2" title={fieldPath}>
-                {label}
-              </span>
-              <span className="font-semibold text-white whitespace-nowrap">
-                {displayValue}
-              </span>
-            </div>
+  key={index}
+  className="flex flex-col sm:flex-row sm:justify-between gap-1 rounded-lg bg-gray-700 p-3 hover:bg-gray-600 transition-colors"
+>
+  <span
+    className="text-gray-300 truncate pr-2 
+               text-sm sm:text-base md:text-lg"
+    title={fieldPath}
+  >
+    {label}
+  </span>
+
+  <span
+    className="font-semibold text-white break-words sm:text-right
+               text-sm sm:text-base md:text-lg"
+  >
+    {displayValue}
+  </span>
+</div>
+
+
           );
         })}
       </div>
