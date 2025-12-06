@@ -1,7 +1,7 @@
 /**
  * Parses API response and extracts relevant data based on API type
  * @param {Object} data - The parsed JSON data
- * @param {string} apiType - The type of API ('time-series' or 'crypto-rates')
+ * @param {string} apiType - The type of API ('time-series', 'crypto-rates', or 'generic-array')
  * @param {Array} selectedFields - Array of field paths to extract
  * @returns {Object} - Parsed data structure
  */
@@ -44,6 +44,45 @@ export function parseApi(data, apiType, selectedFields = []) {
         symbol,
         value: rates[symbol],
       })),
+    };
+  }
+
+  if (apiType === 'generic-array') {
+    // Handle generic array-based APIs
+    let arrayData = [];
+    let arrayPath = 'root';
+
+    // If data is directly an array
+    if (Array.isArray(data)) {
+      arrayData = data;
+      arrayPath = 'root';
+    } else {
+      // Find the first array in the response
+      for (const key in data) {
+        if (Array.isArray(data[key]) && data[key].length > 0) {
+          if (typeof data[key][0] === 'object' && !Array.isArray(data[key][0])) {
+            arrayData = data[key];
+            arrayPath = key;
+            break;
+          }
+        }
+      }
+    }
+
+    if (arrayData.length === 0) {
+      return { error: 'No array data found' };
+    }
+
+    // Get column headers from first item
+    const columns = Object.keys(arrayData[0]).filter(
+      (key) => typeof arrayData[0][key] !== 'object' || arrayData[0][key] === null
+    );
+
+    return {
+      type: 'generic-array',
+      arrayPath,
+      columns,
+      data: arrayData,
     };
   }
 

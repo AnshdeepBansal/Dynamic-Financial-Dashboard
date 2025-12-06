@@ -128,6 +128,9 @@ export default function AddWidgetModal({ isOpen, onClose, editingWidget = null }
     if (displayMode === 'chart' && apiType === 'time-series') {
       // For charts, automatically use all time-series fields
       fieldsToUse = ['open', 'high', 'low', 'close', 'volume'];
+    } else if (displayMode === 'table' && apiType === 'generic-array') {
+      // For tables with generic arrays, use all available fields (data will be auto-detected)
+      fieldsToUse = availableFields.filter(field => field.type === 'array').map(field => field.path);
     } else if (fieldsToUse.length === 0) {
       // For other modes, use all available fields if none selected
       fieldsToUse = availableFields.map(field => field.path);
@@ -349,8 +352,8 @@ export default function AddWidgetModal({ isOpen, onClose, editingWidget = null }
           </div>
         </div>
 
-        {/* Field Selection - Only show for non-chart modes */}
-        {testStatus?.success && displayMode !== 'chart' && (
+        {/* Field Selection - Only show for non-chart and non-table-generic modes */}
+        {testStatus?.success && displayMode !== 'chart' && !(displayMode === 'table' && apiType === 'generic-array') && (
           <div className="mb-4">
             <div className="mb-2 flex items-center justify-between">
               <label className="block text-sm font-medium">Search Fields</label>
@@ -452,6 +455,18 @@ export default function AddWidgetModal({ isOpen, onClose, editingWidget = null }
                 <path fillRule="evenodd" d="M18 5v8a2 2 0 01-2 2h-5l-5 4v-4H4a2 2 0 01-2-2V5a2 2 0 012-2h12a2 2 0 012 2z" clipRule="evenodd" />
               </svg>
               <span>Chart will automatically display all available time-series fields (Open, High, Low, Close, Volume)</span>
+            </div>
+          </div>
+        )}
+
+        {/* Auto-mapping info for table mode with generic arrays */}
+        {testStatus?.success && displayMode === 'table' && apiType === 'generic-array' && (
+          <div className="mb-4 rounded-lg bg-blue-900 p-3 text-blue-200 text-sm">
+            <div className="flex items-center gap-2">
+              <svg className="h-5 w-5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" clipRule="evenodd" />
+              </svg>
+              <span>Table will automatically display all array data with dynamic columns</span>
             </div>
           </div>
         )}
