@@ -89,6 +89,12 @@ src/
 
 ---
 
+## API Keys (Demo Only)
+
+This project intentionally includes public demo API keys for assignment/testing purposes.
+These keys are restricted, rate-limited, and non-sensitive.
+In a real production environment, API keys must be stored securely on the server (environment variables) and never exposed in the client.
+
 ## ⚙️ Installation
 
 ```bash
