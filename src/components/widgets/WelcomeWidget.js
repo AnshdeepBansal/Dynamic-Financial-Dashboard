@@ -91,7 +91,7 @@ export default function WelcomeWidget({ onClose }) {
                 />
               </svg>
             </div>
-            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white">Welcome to Growww</h1>
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white">Welcome to Finboard</h1>
           </div>
           <p className="text-green-100 text-xs sm:text-sm md:text-base">
             Create custom financial dashboards from any API
@@ -104,7 +104,7 @@ export default function WelcomeWidget({ onClose }) {
           <div>
             <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-white mb-3 sm:mb-4">Get Started</h2>
             <p className="text-gray-300 text-xs sm:text-sm md:text-base leading-relaxed">
-              Growww is a powerful dashboard builder that lets you visualize financial data from any API.
+              Finboard is a powerful dashboard builder that lets you visualize financial data from any API.
               Create widgets to display charts, tables, and cards with real-time data updates.
             </p>
           </div>

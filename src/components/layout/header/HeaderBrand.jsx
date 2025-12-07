@@ -23,7 +23,7 @@ export default function HeaderBrand({ isDark, activeWidgetsCount }) {
               isDark ? 'text-white' : 'text-gray-900'
             }`}
           >
-            Finance Dashboard
+            Finboard
           </h1>
         </div>
   
