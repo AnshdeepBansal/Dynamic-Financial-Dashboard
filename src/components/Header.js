@@ -3,6 +3,8 @@
 import { useState, useRef, useEffect } from 'react';
 import useWidgetStore from '@/store/widgetStore';
 import AddWidgetModal from './AddWidgetModal';
+import SunIcon from './Icons/SunIcon';
+import MoonIcon from './Icons/MoonIcon';
 
 export default function Header() {
   const { exportConfig, setTheme, theme, widgets } = useWidgetStore();
@@ -105,7 +107,7 @@ export default function Header() {
             className={`rounded-lg px-3 sm:px-4 py-2 cursor-pointer text-sm font-medium transition-all hover:scale-105 ${isDark ? 'bg-gray-800 text-white hover:bg-gray-700' : 'bg-gray-200 text-gray-900 hover:bg-gray-300'}`}
             aria-label="Toggle theme"
           >
-            <span className="text-base">{theme === 'dark' ? '☀️' : '🌙'}</span>
+            <span className="text-base">{theme === 'dark' ? (<SunIcon/>) : (<MoonIcon/>)}</span>
           </button>
 
           {/* Add Widget Button */}
