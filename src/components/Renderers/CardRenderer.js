@@ -92,7 +92,7 @@ export default function CardRenderer({ data, selectedFields, widgetName, apiType
   className="flex flex-col sm:flex-row sm:justify-between gap-1 rounded-lg bg-gray-700 p-3 hover:bg-gray-600 transition-colors"
 >
   <span
-    className="text-gray-300 truncate pr-2 
+    className="text-gray-400 truncate pr-2 
                text-sm sm:text-base md:text-lg"
     title={fieldPath}
   >
@@ -100,7 +100,7 @@ export default function CardRenderer({ data, selectedFields, widgetName, apiType
   </span>
 
   <span
-    className="font-semibold text-white break-words sm:text-right
+    className="font-light text-white wrap-break-word sm:text-right
                text-sm sm:text-base md:text-lg"
   >
     {displayValue}

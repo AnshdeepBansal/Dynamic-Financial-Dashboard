@@ -45,7 +45,7 @@ export default function Header() {
   return (
     <header
       className={`w-full border-b px-4 sm:px-6 lg:px-8 py-3 sm:py-4 transition-colors ${
-        isDark ? 'border-gray-700 bg-gray-900' : 'border-gray-200 bg-white'
+        isDark ? 'border-gray-700 bg-gray-900' : 'border-gray-200 bg-teal-50'
       }`}
     >
       <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">

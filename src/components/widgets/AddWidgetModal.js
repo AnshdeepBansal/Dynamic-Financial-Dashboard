@@ -372,7 +372,7 @@ export default function AddWidgetModal({ isOpen, onClose, editingWidget = null }
               <div className="flex items-start gap-2">
                 {testStatus.success ? (
                   <svg
-                    className="h-5 w-5 flex-shrink-0 mt-0.5"
+                    className="h-5 w-5 shrink mt-0.5"
                     fill="currentColor"
                     viewBox="0 0 20 20"
                   >
@@ -384,7 +384,7 @@ export default function AddWidgetModal({ isOpen, onClose, editingWidget = null }
                   </svg>
                 ) : testStatus.errorType === 'rate_limit' ? (
                   <svg
-                    className="h-5 w-5 flex-shrink-0 mt-0.5"
+                    className="h-5 w-5 shrink mt-0.5"
                     fill="currentColor"
                     viewBox="0 0 20 20"
                   >
@@ -396,7 +396,7 @@ export default function AddWidgetModal({ isOpen, onClose, editingWidget = null }
                   </svg>
                 ) : (
                   <svg
-                    className="h-5 w-5 flex-shrink-0 mt-0.5"
+                    className="h-5 w-5 shrink mt-0.5"
                     fill="currentColor"
                     viewBox="0 0 20 20"
                   >
@@ -470,7 +470,7 @@ export default function AddWidgetModal({ isOpen, onClose, editingWidget = null }
                     const newHeaders = headers.filter((_, i) => i !== index);
                     setHeaders(newHeaders);
                   }}
-                  className="rounded-lg bg-red-600 px-3 py-2 text-white hover:bg-red-700 sm:flex-shrink-0"
+                  className="rounded-lg bg-red-600 px-3 py-2 text-white hover:bg-red-700 sm:shrink"
                   title="Remove header"
                 >
                   ×

@@ -120,7 +120,7 @@ export default function ImportExportMenu({ isDark, exportConfig, importConfig })
             }`}
           >
             <svg
-              className="h-4 w-4 cursor-pointer sm:h-5 sm:w-5 flex-shrink-0"
+              className="h-4 w-4 cursor-pointer sm:h-5 sm:w-5 shrink"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -144,7 +144,7 @@ export default function ImportExportMenu({ isDark, exportConfig, importConfig })
             }`}
           >
             <svg
-              className="h-4 w-4 cursor-pointer sm:h-5 sm:w-5 flex-shrink-0"
+              className="h-4 w-4 cursor-pointer sm:h-5 sm:w-5 shrink"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"

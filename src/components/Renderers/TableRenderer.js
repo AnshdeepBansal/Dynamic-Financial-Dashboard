@@ -209,12 +209,12 @@ export default function TableRenderer({ data, selectedFields, apiType }) {
       <div className="overflow-x-auto">
         <table className="w-full text-left text-sm">
           <thead>
-            <tr className="border-b border-gray-700">
+            <tr className="border-b border-gray-900">
               {columns.map((column) => (
                 <th
                   key={column}
                   onClick={() => handleSort(column)}
-                  className="cursor-pointer select-none px-4 py-2 text-gray-400 hover:bg-gray-800 transition-colors"
+                  className="cursor-pointer select-none px-4 py-2 text-gray-400 transition-colors"
                   title="Click to sort"
                 >
                   <div className="flex items-center gap-2">
@@ -240,10 +240,10 @@ export default function TableRenderer({ data, selectedFields, apiType }) {
               paginatedData.map((item, index) => (
                 <tr
                   key={index}
-                  className="border-b border-gray-800 hover:bg-gray-800 transition-colors"
+                  className="border-b border-gray-800 transition-colors"
                 >
                   {columns.map((column) => (
-                    <td key={column} className="px-4 py-2 text-gray-300">
+                    <td key={column} className="px-4 py-2 text-gray-400">
                       {formatValue(item[column])}
                     </td>
                   ))}
@@ -255,7 +255,7 @@ export default function TableRenderer({ data, selectedFields, apiType }) {
       </div>
       
       {/* Pagination Controls */}
-      <div className="mt-4 flex items-center justify-between">
+      <div className="mt-4 flex-col gap-4 sm:flex-row md:flex justify-between items-center sm:items-end">
         <div className="text-xs text-gray-400">
           Showing {startIndex + 1} to {Math.min(endIndex, processedData.length)} of {processedData.length} items
           {arrayPath && (
