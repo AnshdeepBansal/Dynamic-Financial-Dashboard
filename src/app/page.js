@@ -1,7 +1,7 @@
 'use client';
 
-import Header from '@/components/Header';
-import WidgetGrid from '@/components/WidgetGrid';
+import Header from '@/components/layout/header/Header';
+import WidgetGrid from '@/components/widgets/WidgetGrid';
 import useWidgetStore from '@/store/widgetStore';
 
 export default function Home() {

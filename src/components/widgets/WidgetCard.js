@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import CardRenderer from './Renderers/CardRenderer';
-import TableRenderer from './Renderers/TableRenderer';
-import ChartRenderer from './Renderers/ChartRenderer';
+import CardRenderer from '@/components/Renderers/CardRenderer';
+import TableRenderer from '@/components/Renderers/TableRenderer';
+import ChartRenderer from '@/components/Renderers/ChartRenderer';
 import { parseApi } from '@/lib/parseApi';
 import { detectApiType } from '@/lib/detectApiType';
 import useWidgetStore from '@/store/widgetStore';
