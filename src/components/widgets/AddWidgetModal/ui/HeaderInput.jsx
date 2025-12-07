@@ -1,4 +1,5 @@
 import InputField from './InputField';
+import PasswordInputField from './PasswordInputField';
 
 /**
  * HeaderInput - Manages individual header key-value pairs
@@ -18,7 +19,7 @@ export default function HeaderInput({
         placeholder="Header Key (e.g., Authorization)"
         className="flex-1 text-sm sm:text-base"
       />
-      <InputField
+      <PasswordInputField
         value={header.value}
         onChange={(e) => onValueChange(index, e.target.value)}
         placeholder="Header Value (e.g., Bearer token123)"
